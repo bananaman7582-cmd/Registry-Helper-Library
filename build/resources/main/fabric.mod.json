@@ -1,0 +1,38 @@
+{
+	"schemaVersion": 1,
+	"id": "registry-helper-library",
+	"version": "1.0.0",
+	"name": "Registry Helper Library",
+	"description": "A small Fabric API library that simplifies registering items, blocks, and armor by wrapping Minecraft's registry system in a few clean, overloaded methods, cutting down repetitive boilerplate while staying fully backward-compatible.",
+	"authors": [
+		"Bananaman"
+	],
+	"contact": {
+		"homepage": "https://modrinth.com/project/registry-helper-library",
+		"sources": "https://github.com/bananaman7582-cmd/Registry-Helper-Library"
+	},
+	"license": "CC0-1.0",
+	"icon": "assets/registry-helper-library/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"com.bananaman.RegistryHelperLibrary"
+		],
+		"client": [
+			"com.bananaman.client.RegistryHelperLibraryClient"
+		]
+	},
+	"mixins": [
+		"registry-helper-library.mixins.json",
+		{
+			"config": "registry-helper-library.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=0.19.3",
+		"minecraft": "~1.21.11",
+		"java": ">=21",
+		"fabric-api": "*"
+	}
+}
