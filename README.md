@@ -49,10 +49,9 @@ Registry Helper Library is distributed as a full dependency via [JitPack](https:
         modImplementation "net.fabricmc:fabric-loader:<loader_version>"
         modImplementation "net.fabricmc.fabric-api:fabric-api:<fabric_api_version>"
 
-        modImplementation "com.github.bananaman7582-cmd:Registry-Helper-Library:<release_tag>"
+        modImplementation "com.github.bananaman7582-cmd:Registry-Helper-Library:Release"
     }
 ```
-    Replace `<release_tag>` with the tag of the [release](https://github.com/bananaman7582-cmd/Registry-Helper-Library/releases) you want (e.g. `v1.0.0`).
 3. Sync Gradle. The first resolution of a given tag triggers a short one-time build on JitPack's end; after that it's cached. Once it resolves, import and use `RegistryHelper` like any other mod dependency — no need to copy the source file into your project or edit its package declaration.
 ## Usage
 
