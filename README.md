@@ -22,9 +22,6 @@ Modern Minecraft registration requires creating an `Identifier`, wrapping it in 
 - Every signature from the original version of this class has been preserved, this is a drop-in replacement, not a complete rewrite
 
 ## Requirements
-| | |
-|---|---|
-
 | Minecraft | 1.21.11 |
 | Mappings | Mojang (official) — not Yarn |
 | Mod loader | Fabric Loader + Fabric API |
