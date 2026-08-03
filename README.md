@@ -34,24 +34,26 @@ Registering things in modern Minecraft means building an `Identifier`, wrapping 
 Fabric API is required specifically for `registerCreativeTab` (`FabricItemGroup`) and `registerParticle` (`FabricParticleTypes`). Everything else only touches vanilla classes.
 
 ## Installation
-
-This is currently distributed as a single source file rather than a packaged dependency. To use it:
-
-1. Download [`RegistryHelper.java`](RegistryHelper.java) from this repo.
-2. Drop it into your mod's source tree, and update the `package` declaration at the top to match your own mod's package.
-3. Make sure your `build.gradle` is already set up for Fabric Loader, Fabric API, and Minecraft 1.21.11 on Mojang mappings, e.g.:
-
-    ```groovy
+Registry Helper Library is distributed as a full dependency via [JitPack](https://jitpack.io), built directly from this repo's source and its published release — no separate Maven publishing needed. To use it:
+1. Add JitPack as a repository in your `build.gradle`:
+```groovy
+    repositories {
+        maven { url "https://jitpack.io" }
+    }
+```
+2. Add the library as a dependency, alongside Fabric Loader and Fabric API for Minecraft 1.21.11 on Mojang mappings:
+```groovy
     dependencies {
         minecraft "com.mojang:minecraft:1.21.11"
         mappings loom.officialMojangMappings()
         modImplementation "net.fabricmc:fabric-loader:<loader_version>"
         modImplementation "net.fabricmc.fabric-api:fabric-api:<fabric_api_version>"
+
+        modImplementation "com.github.bananaman7582-cmd:Registry-Helper-Library:<release_tag>"
     }
-    ```
-
-No extra Maven repositories or coordinates needed — it's just a `.java` file.
-
+```
+    Replace `<release_tag>` with the tag of the [release](https://github.com/bananaman7582-cmd/Registry-Helper-Library/releases) you want (e.g. `v1.0.0`).
+3. Sync Gradle. The first resolution of a given tag triggers a short one-time build on JitPack's end; after that it's cached. Once it resolves, import and use `RegistryHelper` like any other mod dependency — no need to copy the source file into your project or edit its package declaration.
 ## Usage
 
 ### Items
