@@ -1,69 +1,69 @@
 # Registry Helper Library
 
-A small Fabric utility class for Minecraft **1.21.11** that wraps Minecraft's registry system — items, blocks, block entities, entities, sound events, particles, armor sets, and creative tabs — into a handful of clean, overloaded methods, so your `ModItems` / `ModBlocks` / etc. classes stop repeating the same `Identifier` / `ResourceKey` boilerplate over and over.
+A tiny Fabric helper class for Minecraft 1.21.11 that encapsulates Minecraft's entire registry system — items, blocks, block entities, entities, sound events, particles, armor sets, and creative tabs — into a few overloaded methods, allowing your `ModItems` / `ModBlocks` / etc. classes to avoid the repetitive `Identifier` / `ResourceKey` registration boilerplate.
 
-Built for **Fabric Loader + Fabric API**, on **Mojang's official mappings** (no Yarn).
+Compatible with Fabric Loader + Fabric API, using Mojang's official mappings (not Yarn).
 
 ## Why
 
-Registering things in modern Minecraft means building an `Identifier`, wrapping it in a `ResourceKey`, and calling `Registry.register(...)` — and for blocks, armor, entities, and block entities, doing several of those steps more than once per object. `RegistryHelper` collapses each of those into a single call, while still leaving every vanilla builder option available when you need it.
+Modern Minecraft registration requires creating an `Identifier`, wrapping it in a `ResourceKey`, and registering it via `Registry.register(...)` — plus, for blocks, armor, entities, and block entities, repeating this process multiple times per entity. `RegistryHelper` reduces each step down to a single method call, without compromising any vanilla builder options.
 
 ## Features
 
-- **Items** — plain items, or any custom `Item` subclass, with or without custom `Item.Properties`
-- **Blocks** — registers the block *and* a matching `BlockItem` in one call, with an option to skip the item entirely (fire, portals, technical blocks) or supply a custom item class
-- **Block entities** — wraps `BlockEntityType.Builder` so you don't have to remember its `build(null)` datafixer argument
-- **Entities** — wraps `EntityType.Builder`, handling the "the builder needs its own key before it can build" ordering problem for you
-- **Armor** — single pieces, or a full helmet/chestplate/leggings/boots set in one call
-- **Sound events** — variable-range (the vanilla default) or fixed-range, one line each
-- **Particles** — simple particle types, with or without the "ignore the Minimal particles setting" flag
-- **Creative tabs** — builds and registers a `CreativeModeTab` that auto-populates from everything the helper has already registered
-- **Bookkeeping** — every registered `Item` and `Block` is tracked automatically, so you can hand them to a creative tab, a loot table, a recipe viewer category, etc. without keeping a second list yourself
-- Every method signature from the original version of this class is preserved — this is a drop-in upgrade, not a rewrite
+- Items — normal items or any subclass of `Item` with or without custom `Item.Properties`
+- Blocks — registers the block and its corresponding `BlockItem` in a single method, plus an option for fire, portals, technical blocks, etc. or for a custom item class
+- Block entities — wraps `BlockEntityType.Builder` and relieves you from remembering its `build(null)` datafixer parameter
+- Entities — wraps `EntityType.Builder`, solving the "the builder needs its own key before it can build" problem for you
+- Armor — single pieces or a whole set of a helmet, chest plate, leggings, and boots
+- Sound events — variable-range (vanilla default) or fixed-range, one method call each
+- Particles — standard particle types, optionally ignoring the Minimal particles setting
+- Creative tabs — builds and registers a `CreativeModeTab` with items that `RegistryHelper` has already registered
+- Bookkeeping — all registered `Item`s and `Block`s are kept track of automatically, allowing you to pass them to a creative tab, a loot table, a recipe viewer category, etc. without maintaining another list yourself
+- Every signature from the original version of this class has been preserved, this is a drop-in replacement, not a complete rewrite
 
 ## Requirements
-
 | | |
 |---|---|
+
 | Minecraft | 1.21.11 |
-| Mappings | Mojang (official) — **not** Yarn |
+| Mappings | Mojang (official) — not Yarn |
 | Mod loader | Fabric Loader + Fabric API |
 | Java | 21+ |
 | Fabric Loom | 1.14+ (per Fabric's own 1.21.11 dev guidance) |
 
-Fabric API is required specifically for `registerCreativeTab` (`FabricItemGroup`) and `registerParticle` (`FabricParticleTypes`). Everything else only touches vanilla classes.
+Fabric API is necessary only for `registerCreativeTab` (`FabricItemGroup`) and `registerParticle` (`FabricParticleTypes`). Everything else deals exclusively with vanilla classes.
 
 ## Installation
-Registry Helper Library is distributed as a full dependency via [JitPack](https://jitpack.io), built directly from this repo's source and its published release — no separate Maven publishing needed. To use it:
-1. Add JitPack as a repository in your `build.gradle`:
+Registry Helper Library comes fully packaged as a dependency through [JitPack](https://jitpack.io), compiled right out of this repo's source and releases. You do not need to create your own Maven publication. To install it:
+1. Declare JitPack as a repository in your `build.gradle`:
 ```groovy
-    repositories {
-        maven { url "https://jitpack.io" }
-    }
+repositories {
+maven { url "https://jitpack.io" }
+}
 ```
-2. Add the library as a dependency, alongside Fabric Loader and Fabric API for Minecraft 1.21.11 on Mojang mappings:
+2. Add the library as a dependency along with Fabric Loader and Fabric API for Minecraft 1.21.11 on Mojang mappings:
 ```groovy
-    dependencies {
-        minecraft "com.mojang:minecraft:1.21.11"
-        mappings loom.officialMojangMappings()
-        modImplementation "net.fabricmc:fabric-loader:<loader_version>"
-        modImplementation "net.fabricmc.fabric-api:fabric-api:<fabric_api_version>"
+dependencies {
+minecraft "com.mojang:minecraft:1.21.11"
+mappings loom.officialMojangMappings()
+modImplementation "net.fabricmc:fabric-loader:"
+modImplementation "net.fabricmc.fabric-api:fabric-api:"
 
-        modImplementation "com.github.bananaman7582-cmd:Registry-Helper-Library:Release"
-    }
+modImplementation "com.github.bananaman7582-cmd:Registry-Helper-Library:Release"
+}
 ```
-3. Sync Gradle. The first resolution of a given tag triggers a short one-time build on JitPack's end; after that it's cached. Once it resolves, import and use `RegistryHelper` like any other mod dependency — no need to copy the source file into your project or edit its package declaration.
+3. Sync Gradle. The first time you resolve a given tag from JitPack, it will take a few moments to compile, then it will be cached. After that just import and use `RegistryHelper` like any other mod dependency — there is no need to copy the library's source files or rename its package.
 ## Usage
 
 ### Items
 
 ```java
 public class ModItems {
-    public static final RegistryHelper<Item> ITEMS = RegistryHelper.items(MOD_ID);
+public static final RegistryHelper ITEMS = RegistryHelper.items(MOD_ID);
 
-    public static final Item RUBY = ITEMS.registerItem("ruby", new Item.Properties());
-    public static final Item RUBY_SWORD = ITEMS.registerItem("ruby_sword", RubySwordItem::new,
-            new Item.Properties().durability(750));
+public static final Item RUBY = ITEMS.registerItem("ruby", new Item.Properties());
+public static final Item RUBY_SWORD = ITEMS.registerItem("ruby_sword", RubySwordItem::new,
+new Item.Properties().durability(750));
 }
 ```
 
@@ -71,18 +71,18 @@ public class ModItems {
 
 ```java
 public class ModBlocks {
-    public static final RegistryHelper<Block> BLOCKS = RegistryHelper.blocks(MOD_ID);
+public static final RegistryHelper BLOCKS = RegistryHelper.blocks(MOD_ID);
 
-    // registers the block AND a matching BlockItem
-    public static final Block RUBY_BLOCK = BLOCKS.registerBlock("ruby_block", Block::new,
-            BlockBehaviour.Properties.of());
+// registers the block AND a matching BlockItem
+public static final Block RUBY_BLOCK = BLOCKS.registerBlock("ruby_block", Block::new,
+BlockBehaviour.Properties.of());
 
-    // no BlockItem at all - for fire, portals, technical blocks, etc.
-    public static final Block RUBY_PORTAL = BLOCKS.registerBlockWithoutItem("ruby_portal",
-            RubyPortalBlock::new, BlockBehaviour.Properties.of().noCollission());
+// no BlockItem at all - for fire, portals, technical blocks, etc.
+public static final Block RUBY_PORTAL = BLOCKS.registerBlockWithoutItem("ruby_portal",
+RubyPortalBlock::new, BlockBehaviour.Properties.of().noCollission());
 
-    public static final BlockEntityType<RubyFurnaceBlockEntity> RUBY_FURNACE_BE =
-            BLOCKS.registerBlockEntityType("ruby_furnace", RubyFurnaceBlockEntity::new, RUBY_BLOCK);
+public static final BlockEntityType RUBY_FURNACE_BE =
+BLOCKS.registerBlockEntityType("ruby_furnace", RubyFurnaceBlockEntity::new, RUBY_BLOCK);
 }
 ```
 
@@ -90,11 +90,11 @@ public class ModBlocks {
 
 ```java
 public class ModArmor {
-    private static final RegistryHelper<Item> ITEMS = RegistryHelper.items(MOD_ID);
+private static final RegistryHelper ITEMS = RegistryHelper.items(MOD_ID);
 
-    // registers helmet, chestplate, leggings, and boots in one call
-    public static final RegistryHelper.ArmorSet RUBY_ARMOR =
-            ITEMS.registerArmorSet("ruby", ModArmorMaterials.RUBY);
+// registers helmet, chestplate, leggings, and boots in one call
+public static final RegistryHelper.ArmorSet RUBY_ARMOR =
+ITEMS.registerArmorSet("ruby", ModArmorMaterials.RUBY);
 }
 ```
 
@@ -102,12 +102,12 @@ public class ModArmor {
 
 ```java
 public class ModEntities {
-    public static final RegistryHelper<EntityType<?>> ENTITY_TYPES = RegistryHelper.entityTypes(MOD_ID);
+public static final RegistryHelper> ENTITY_TYPES = RegistryHelper.entityTypes(MOD_ID);
 
-    public static final EntityType<RubyGolemEntity> RUBY_GOLEM = ENTITY_TYPES.registerEntityType(
-            "ruby_golem",
-            EntityType.Builder.of(RubyGolemEntity::new, MobCategory.CREATURE).sized(1.0f, 2.0f)
-    );
+public static final EntityType RUBY_GOLEM = ENTITY_TYPES.registerEntityType(
+"ruby_golem",
+EntityType.Builder.of(RubyGolemEntity::new, MobCategory.CREATURE).sized(1.0f, 2.0f)
+);
 }
 ```
 
@@ -115,15 +115,15 @@ public class ModEntities {
 
 ```java
 public class ModSounds {
-    private static final RegistryHelper<SoundEvent> SOUNDS = RegistryHelper.soundEvents(MOD_ID);
+private static final RegistryHelper SOUNDS = RegistryHelper.soundEvents(MOD_ID);
 
-    public static final SoundEvent RUBY_CHIME = SOUNDS.registerSoundEvent("ruby_chime");
+public static final SoundEvent RUBY_CHIME = SOUNDS.registerSoundEvent("ruby_chime");
 }
 
 public class ModParticles {
-    private static final RegistryHelper<ParticleType<?>> PARTICLES = RegistryHelper.particleTypes(MOD_ID);
+private static final RegistryHelper> PARTICLES = RegistryHelper.particleTypes(MOD_ID);
 
-    public static final SimpleParticleType RUBY_SPARKLE = PARTICLES.registerParticle("ruby_sparkle");
+public static final SimpleParticleType RUBY_SPARKLE = PARTICLES.registerParticle("ruby_sparkle");
 }
 ```
 
@@ -131,21 +131,21 @@ public class ModParticles {
 
 ```java
 public class ModItemGroups {
-    public static final CreativeModeTab RUBY_TAB =
-            ModItems.ITEMS.registerCreativeTab("ruby_tab", () -> new ItemStack(ModItems.RUBY));
+public static final CreativeModeTab RUBY_TAB =
+ModItems.ITEMS.registerCreativeTab("ruby_tab", () -> new ItemStack(ModItems.RUBY));
 }
 ```
 
-`registerCreativeTab` populates the tab from every item `ModItems.ITEMS` has registered so far — plain items, block items, and armor alike — read lazily at populate-time, so it doesn't matter whether the tab is built before or after the rest of your items.
+The `registerCreativeTab` method populates the creative tab from all the items registered by `ModItems.ITEMS` — plain items, block items, armor items, etc. — reading lazily at populate time, so it does not matter whether the creative tab is created before or after your items.
 
 ## Backwards compatibility
 
-Every method that shipped in the original version of this class keeps its exact name, parameters, and return type. Existing code that already uses `RegistryHelper` will keep compiling unchanged.
+Every method that was present in the original version of this class retains its exact name, parameters, and return type. Code which already uses `RegistryHelper` will keep working without any changes.
 
 ## License
 
-No license has been published for this repository yet. Until one is added, treat the source as all-rights-reserved and check with the maintainer before redistributing it.
+There is no LICENSE published for this repo yet. Until one is provided, consider the source copyrighted and get permission from the maintainer before distributing it.
 
 ## Contributing
 
-Issues and pull requests are welcome at [github.com/bananaman7582-cmd/Registry-Helper-Library](https://github.com/bananaman7582-cmd/Registry-Helper-Library).
+Any issues and pull requests are welcome at [github.com/bananaman7582-cmd/Registry-Helper-Library](https://github.com/bananaman7582-cmd/Registry-Helper-Library).
