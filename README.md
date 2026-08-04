@@ -139,10 +139,6 @@ The `registerCreativeTab` method populates the creative tab from all the items r
 
 Every method that was present in the original version of this class retains its exact name, parameters, and return type. Code which already uses `RegistryHelper` will keep working without any changes.
 
-## License
-
-There is no LICENSE published for this repo yet. Until one is provided, consider the source copyrighted and get permission from the maintainer before distributing it.
-
 ## Contributing
 
 Any issues and pull requests are welcome at [github.com/bananaman7582-cmd/Registry-Helper-Library](https://github.com/bananaman7582-cmd/Registry-Helper-Library).
