@@ -4,29 +4,28 @@ import com.mojang.brigadier.Command;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
-import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
 import net.fabricmc.fabric.api.particle.v1.FabricParticleTypes;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.particles.ParticleType;
 import net.minecraft.core.particles.SimpleParticleType;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.server.permissions.Permission;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.item.ArmorItem;
+import net.minecraft.world.item.ArmorMaterial;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.equipment.ArmorMaterial;
-import net.minecraft.world.item.equipment.ArmorType;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -47,7 +46,7 @@ import java.util.function.UnaryOperator;
 /**
  * A small helper for registering game objects (items, blocks, armor, and anything
  * else) against a vanilla {@link Registry} without repeating the same
- * {@link Identifier} / {@link ResourceKey} boilerplate every time.
+ * {@link ResourceLocation} / {@link ResourceKey} boilerplate every time.
  *
  * <p>Every method that existed on the original version of this class keeps the exact
  * same name, parameters and return type, so existing code that uses it keeps
@@ -56,7 +55,7 @@ import java.util.function.UnaryOperator;
  * armor set, a populated creative tab, block entities, entities, sound events, and
  * particles) so you reach for this class instead of hand-rolling registration again.
  *
- * <p>Targets Fabric for Minecraft 1.21.11 on Mojang mappings (no Yarn).
+ * <p>Targets Fabric for Minecraft 1.21.1 on Mojang mappings (no Yarn).
  *
  * <h2>Quick start</h2>
  * <pre>{@code
@@ -84,7 +83,10 @@ import java.util.function.UnaryOperator;
  * public class ModArmor {
  *     private static final RegistryHelper<Item> ITEMS = RegistryHelper.items(MOD_ID);
  *
- *     // registers helmet/chestplate/leggings/boots in one call
+ *     // registers helmet/chestplate/leggings/boots in one call. In 1.21.1 an
+ *     // ArmorMaterial is a registry object, so you pass a Holder<ArmorMaterial>
+ *     // (e.g. ModArmorMaterials.RUBY, obtained from the ARMOR_MATERIAL registry)
+ *     // rather than a bare ArmorMaterial instance.
  *     public static final RegistryHelper.ArmorSet RUBY_ARMOR =
  *             ITEMS.registerArmorSet("ruby", ModArmorMaterials.RUBY);
  * }
@@ -245,7 +247,7 @@ public class RegistryHelper<T> {
     ) {
         ResourceKey<Item> key = itemKey(id(name));
 
-        Item item = factory.apply(properties.setId(key));
+        Item item = factory.apply(properties);
         Item registered = Registry.register(BuiltInRegistries.ITEM, key, item);
         registeredItems.add(registered);
         return registered;
@@ -304,15 +306,15 @@ public class RegistryHelper<T> {
             BiFunction<Block, Item.Properties, Item> itemFactory,
             Item.Properties itemProperties
     ) {
-        Identifier resId = id(name);
+        ResourceLocation resId = id(name);
         ResourceKey<Block> blockKey = blockKey(resId);
         ResourceKey<Item> itemKey = itemKey(resId);
 
-        Block block = factory.apply(blockProperties.setId(blockKey));
+        Block block = factory.apply(blockProperties);
         Registry.register(BuiltInRegistries.BLOCK, blockKey, block);
         registeredBlocks.add(block);
 
-        Item item = itemFactory.apply(block, itemProperties.setId(itemKey));
+        Item item = itemFactory.apply(block, itemProperties);
         Registry.register(BuiltInRegistries.ITEM, itemKey, item);
         registeredItems.add(item);
 
@@ -332,7 +334,7 @@ public class RegistryHelper<T> {
     ) {
         ResourceKey<Block> blockKey = blockKey(id(name));
 
-        Block block = factory.apply(properties.setId(blockKey));
+        Block block = factory.apply(properties);
         Registry.register(BuiltInRegistries.BLOCK, blockKey, block);
         registeredBlocks.add(block);
         return block;
@@ -345,12 +347,12 @@ public class RegistryHelper<T> {
     /**
      * Registers a {@link BlockEntityType} for {@code factory}, valid on {@code validBlocks}.
      *
-     * <p>As of Minecraft 1.21.2, vanilla's own {@code BlockEntityType.Builder} and {@code
-     * BlockEntityType.BlockEntitySupplier} were made private, so mods can no longer reference
-     * them directly. This uses Fabric API's {@link FabricBlockEntityTypeBuilder} instead, which
-     * exists specifically as a public stand-in for that vanilla builder - no access widener
-     * required - and, since block entity types no longer need a datafixer {@code Type}, its
-     * {@code build()} takes no arguments.
+     * <p>In 1.21.1, vanilla's {@code BlockEntityType.Builder} is still public, so this
+     * uses it directly rather than Fabric API's {@code FabricBlockEntityTypeBuilder}
+     * (that builder only became necessary from 1.21.2 onward, once the vanilla builder
+     * was made private). {@code build(null)} is intentional - the argument is a
+     * datafixer {@code Type} that mods have no legitimate use for, and vanilla itself
+     * passes {@code null} for every modded-style registration.
      *
      * <pre>{@code
      * public static final RegistryHelper<Block> BLOCKS = RegistryHelper.blocks(MOD_ID);
@@ -364,10 +366,10 @@ public class RegistryHelper<T> {
      */
     public <E extends BlockEntity> BlockEntityType<E> registerBlockEntityType(
             String name,
-            FabricBlockEntityTypeBuilder.Factory<E> factory,
+            BlockEntityType.BlockEntitySupplier<E> factory,
             Block... validBlocks
     ) {
-        BlockEntityType<E> type = FabricBlockEntityTypeBuilder.<E>create(factory, validBlocks).build();
+        BlockEntityType<E> type = BlockEntityType.Builder.of(factory, validBlocks).build(null);
         return Registry.register(BuiltInRegistries.BLOCK_ENTITY_TYPE, id(name), type);
     }
 
@@ -378,10 +380,11 @@ public class RegistryHelper<T> {
     /**
      * Builds and registers an {@link EntityType} from {@code builder}.
      *
-     * <p>Unlike items and blocks, an entity type's builder needs its {@link ResourceKey} up
-     * front - the key gets baked into the type for things like network tracking - so this
-     * takes the (mostly configured) builder itself, rather than a bare factory, and calls
-     * {@code build(...)} on it for you.
+     * <p>In 1.21.1, {@code EntityType.Builder.build(...)} still takes a plain {@code String}
+     * rather than a {@link ResourceKey} - the {@code ResourceKey}-accepting overload (needed
+     * for the newer network-tracking system) wasn't added until 1.21.2. This passes {@code
+     * name} itself; that string only matters for looking up a datafixer "choice type" for
+     * saveable vanilla entities, so for a modded entity type it's fine as-is.
      *
      * <pre>{@code
      * public static final RegistryHelper<EntityType<?>> ENTITY_TYPES = RegistryHelper.entityTypes(MOD_ID);
@@ -395,8 +398,7 @@ public class RegistryHelper<T> {
      * @param <E> the {@link Entity} subtype being registered
      */
     public <E extends Entity> EntityType<E> registerEntityType(String name, EntityType.Builder<E> builder) {
-        ResourceKey<EntityType<?>> key = entityTypeKey(id(name));
-        return Registry.register(BuiltInRegistries.ENTITY_TYPE, key, builder.build(key));
+        return Registry.register(BuiltInRegistries.ENTITY_TYPE, id(name), builder.build(name));
     }
 
     // -----------------------------------------------------------------
@@ -405,7 +407,7 @@ public class RegistryHelper<T> {
 
     /** Registers a normal, distance-attenuated {@link SoundEvent} - what almost every sound in the game uses. */
     public SoundEvent registerSoundEvent(String name) {
-        Identifier resId = id(name);
+        ResourceLocation resId = id(name);
         return Registry.register(BuiltInRegistries.SOUND_EVENT, resId, SoundEvent.createVariableRangeEvent(resId));
     }
 
@@ -415,7 +417,7 @@ public class RegistryHelper<T> {
      * regardless of what's passed in.
      */
     public SoundEvent registerSoundEvent(String name, float range) {
-        Identifier resId = id(name);
+        ResourceLocation resId = id(name);
         return Registry.register(BuiltInRegistries.SOUND_EVENT, resId, SoundEvent.createFixedRangeEvent(resId, range));
     }
 
@@ -451,7 +453,7 @@ public class RegistryHelper<T> {
     /**
      * Registers a single, argument-less command - {@code /name} - available to every
      * player, that runs {@code executor} when called. No permission check at all -
-     * see {@link #registerCommand(String, Permission, Command)} if you need to restrict it.
+     * see {@link #registerCommand(String, int, Command)} if you need to restrict it.
      *
      * <pre>{@code
      * RegistryHelper.registerCommand("heal", context -> {
@@ -467,26 +469,26 @@ public class RegistryHelper<T> {
     }
 
     /**
-     * Like {@link #registerCommand(String, Command)}, but only usable by sources that satisfy
-     * {@code permission}.
+     * Like {@link #registerCommand(String, Command)}, but only usable by sources whose
+     * permission level is at least {@code permissionLevel}.
      *
-     * <p>As of Minecraft 1.21.11, permission checks are done through a {@link Permission}
-     * object rather than a raw integer OP level - {@code CommandSourceStack} no longer has a
-     * plain {@code hasPermission(int)} method. Fabric API's own {@code net.minecraft.server.permissions.Permissions}
-     * class has ready-made constants for the vanilla OP tiers (moderator, gamemaster, admin,
-     * etc.) - check that class for the full list, since new ones can be added between versions.
+     * <p>In 1.21.1, permission checks are still done through the plain integer OP-level
+     * system via {@link CommandSourceStack#hasPermission(int)} - the {@code Permission}
+     * object-based API doesn't exist yet. The vanilla OP tiers are 0 (everyone), 1
+     * (bypass spawn protection), 2 (moderator - most commands, cheats), 3 (gamemaster -
+     * multiplayer management), and 4 (admin - everything, including {@code /stop}).
      *
      * <pre>{@code
-     * RegistryHelper.registerCommand("required_command", Permissions.COMMANDS_MODERATOR, context -> {
+     * RegistryHelper.registerCommand("required_command", 2, context -> {
      *     context.getSource().sendSuccess(() -> Component.literal("Called it!"), false);
      *     return 1;
      * });
      * }</pre>
      */
-    public static void registerCommand(String name, Permission permission, Command<CommandSourceStack> executor) {
+    public static void registerCommand(String name, int permissionLevel, Command<CommandSourceStack> executor) {
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
                 dispatcher.register(Commands.literal(name)
-                        .requires(source -> source.permissions().hasPermission(permission))
+                        .requires(source -> source.hasPermission(permissionLevel))
                         .executes(executor))
         );
     }
@@ -521,20 +523,27 @@ public class RegistryHelper<T> {
     // -----------------------------------------------------------------
 
     /** Original signature - registers a single armor piece with default {@link Item.Properties}. */
-    public Item registerArmor(String name, ArmorMaterial material, ArmorType type) {
+    public Item registerArmor(String name, Holder<ArmorMaterial> material, ArmorItem.Type type) {
         return registerArmor(name, material, type, new Item.Properties());
     }
 
-    /** Like above, but lets you start from your own {@link Item.Properties} (durability, rarity, etc.). */
+    /**
+     * Like above, but lets you start from your own {@link Item.Properties} (durability, rarity, etc.).
+     *
+     * <p>In 1.21.1, {@code ArmorMaterial} is a registry object rather than a plain data
+     * holder, so it's passed as a {@link Holder}. You get one of these back when you
+     * register your own material into {@code Registries.ARMOR_MATERIAL} - see the vanilla
+     * {@code ArmorMaterials} class for reference values on durability, protection, etc.
+     */
     public Item registerArmor(
             String name,
-            ArmorMaterial material,
-            ArmorType type,
+            Holder<ArmorMaterial> material,
+            ArmorItem.Type type,
             Item.Properties properties
     ) {
         ResourceKey<Item> key = itemKey(id(name));
 
-        Item item = new Item(properties.setId(key).humanoidArmor(material, type));
+        Item item = new ArmorItem(material, type, properties);
         Item registered = Registry.register(BuiltInRegistries.ITEM, key, item);
         registeredItems.add(registered);
         return registered;
@@ -544,20 +553,20 @@ public class RegistryHelper<T> {
      * Registers a full set of armor - {@code baseName + "_helmet"}, {@code "_chestplate"},
      * {@code "_leggings"} and {@code "_boots"} - in one call.
      */
-    public ArmorSet registerArmorSet(String baseName, ArmorMaterial material) {
+    public ArmorSet registerArmorSet(String baseName, Holder<ArmorMaterial> material) {
         return registerArmorSet(baseName, material, Item.Properties::new);
     }
 
     /** Like above, with a supplier for the base {@link Item.Properties} of every piece. */
     public ArmorSet registerArmorSet(
             String baseName,
-            ArmorMaterial material,
+            Holder<ArmorMaterial> material,
             Supplier<Item.Properties> properties
     ) {
-        Item helmet = registerArmor(baseName + "_helmet", material, ArmorType.HELMET, properties.get());
-        Item chestplate = registerArmor(baseName + "_chestplate", material, ArmorType.CHESTPLATE, properties.get());
-        Item leggings = registerArmor(baseName + "_leggings", material, ArmorType.LEGGINGS, properties.get());
-        Item boots = registerArmor(baseName + "_boots", material, ArmorType.BOOTS, properties.get());
+        Item helmet = registerArmor(baseName + "_helmet", material, ArmorItem.Type.HELMET, properties.get());
+        Item chestplate = registerArmor(baseName + "_chestplate", material, ArmorItem.Type.CHESTPLATE, properties.get());
+        Item leggings = registerArmor(baseName + "_leggings", material, ArmorItem.Type.LEGGINGS, properties.get());
+        Item boots = registerArmor(baseName + "_boots", material, ArmorItem.Type.BOOTS, properties.get());
         return new ArmorSet(helmet, chestplate, leggings, boots);
     }
 
@@ -643,28 +652,24 @@ public class RegistryHelper<T> {
     // Internals
     // -----------------------------------------------------------------
 
-    private Identifier id(String name) {
+    private ResourceLocation id(String name) {
         if (name == null || name.isBlank()) {
             throw new IllegalArgumentException(
                     "Registration name cannot be null or blank (mod id: '" + modId + "')"
             );
         }
-        return Identifier.fromNamespaceAndPath(modId, name);
+        return ResourceLocation.fromNamespaceAndPath(modId, name);
     }
 
-    private ResourceKey<Item> itemKey(Identifier id) {
+    private ResourceKey<Item> itemKey(ResourceLocation id) {
         return ResourceKey.create(Registries.ITEM, id);
     }
 
-    private ResourceKey<Block> blockKey(Identifier id) {
+    private ResourceKey<Block> blockKey(ResourceLocation id) {
         return ResourceKey.create(Registries.BLOCK, id);
     }
 
-    private ResourceKey<EntityType<?>> entityTypeKey(Identifier id) {
-        return ResourceKey.create(Registries.ENTITY_TYPE, id);
-    }
-
-    private ResourceKey<CreativeModeTab> creativeTabKey(Identifier id) {
+    private ResourceKey<CreativeModeTab> creativeTabKey(ResourceLocation id) {
         return ResourceKey.create(Registries.CREATIVE_MODE_TAB, id);
     }
 
