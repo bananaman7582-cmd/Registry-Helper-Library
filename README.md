@@ -9,7 +9,6 @@ Built for Fabric Loader + Fabric API, on Mojang's official mappings (not Yarn).
 | Mappings | Mojang official (not Yarn) |
 |---|---|
 | Mod loader | Fabric Loader + Fabric API |
-| Java | 21+ |
 | Fabric Loom | whatever's current for your Minecraft version |
 
 Fabric API is only needed for `registerCreativeTab`, `registerParticle`, and the command helpers. Everything else is plain vanilla.
