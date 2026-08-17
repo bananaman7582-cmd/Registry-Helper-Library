@@ -1,7 +1,7 @@
 package com.bananaman;
 
 import net.fabricmc.api.ModInitializer;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,9 +22,8 @@ public class RegistryHelperLibrary implements ModInitializer {
 		LOGGER.info("Registry Helper Library has been initialized.");
 	}
 
-	// ResourceLocation was renamed to Identifier when Minecraft went unobfuscated,
-	// so this helper returns an Identifier now. The factory method name is unchanged.
-	public static Identifier id(String path) {
-		return Identifier.fromNamespaceAndPath(MOD_ID, path);
+	// 1.20.1 has no ResourceLocation.fromNamespaceAndPath factory, so use the constructor.
+	public static ResourceLocation id(String path) {
+		return new ResourceLocation(MOD_ID, path);
 	}
 }
